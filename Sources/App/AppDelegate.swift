@@ -26,6 +26,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.animates = true
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        AudioDeviceManager.shared.teardownAggregateDevice()
+    }
+
     @objc func togglePopover() {
         guard let button = statusItem.button else { return }
 

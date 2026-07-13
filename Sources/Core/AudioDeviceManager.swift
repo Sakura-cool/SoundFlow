@@ -5,13 +5,14 @@ import Combine
 class AudioDeviceManager: ObservableObject {
     @Published var outputDevices: [AudioDevice] = []
     @Published var inputDevices: [AudioDevice] = []
-    @Published var selectedOutputDevice: AudioDevice?
+    @Published var selectedOutputDevices: Set<AudioDeviceID> = []
     @Published var selectedInputDevice: AudioDevice?
 
     static let shared = AudioDeviceManager()
 
     private var deviceListenerBlock: AudioObjectPropertyListenerBlock?
     private let deviceListChangedNotification = Notification.Name("AudioDeviceListChanged")
+    private var aggregateDeviceID: AudioDeviceID = 0
 
     private init() {
         refreshDeviceList()
@@ -205,9 +206,13 @@ class AudioDeviceManager: ObservableObject {
 
     // MARK: - Device Selection
 
-    func selectOutputDevice(_ device: AudioDevice) {
-        selectedOutputDevice = device
-        setDefaultOutputDevice(device.id)
+    func toggleOutputDevice(_ device: AudioDevice) {
+        if selectedOutputDevices.contains(device.id) {
+            selectedOutputDevices.remove(device.id)
+        } else {
+            selectedOutputDevices.insert(device.id)
+        }
+        updateAggregateDevice()
         AppState.shared.saveConfigurations()
     }
 
@@ -221,8 +226,125 @@ class AudioDeviceManager: ObservableObject {
         let defaultOutput = getDefaultOutputDevice()
         let defaultInput = getDefaultInputDevice()
 
-        selectedOutputDevice = outputDevices.first { $0.id == defaultOutput }
+        if aggregateDeviceID != 0 && defaultOutput == aggregateDeviceID {
+            // aggregate device is already selected, don't overwrite selection
+        } else if aggregateDeviceID != 0 && defaultOutput != aggregateDeviceID {
+            // aggregate device was torn down externally
+            aggregateDeviceID = 0
+        }
+
         selectedInputDevice = inputDevices.first { $0.id == defaultInput }
+    }
+
+    // MARK: - Aggregate Device
+
+    func updateAggregateDevice() {
+        if selectedOutputDevices.count <= 1 {
+            teardownAggregateDevice()
+            if let singleID = selectedOutputDevices.first {
+                setDefaultOutputDevice(singleID)
+            }
+            return
+        }
+
+        let deviceIDs = Array(selectedOutputDevices).sorted()
+        if aggregateDeviceID != 0, deviceIDs == getAggregateSubDevices(deviceID: aggregateDeviceID) {
+            setDefaultOutputDevice(aggregateDeviceID)
+            return
+        }
+
+        teardownAggregateDevice()
+
+        guard let newID = createAggregateDevice(name: "SoundFlow Aggregate", subDeviceIDs: deviceIDs) else {
+            return
+        }
+
+        aggregateDeviceID = newID
+        setDefaultOutputDevice(newID)
+    }
+
+    private func createAggregateDevice(name: String, subDeviceIDs: [AudioDeviceID]) -> AudioDeviceID? {
+        var aggregateID: AudioDeviceID = 0
+
+        let desc: [String: Any] = [
+            kAudioAggregateDeviceNameKey as String: name,
+            kAudioAggregateDeviceUIDKey as String: "com.soundflow.aggregate.\(UUID().uuidString)",
+            kAudioAggregateDeviceSubDeviceListKey as String: subDeviceIDs.map { id -> [String: Any] in
+                [
+                    kAudioSubDeviceUIDKey as String: getDeviceUID(id: id) ?? "unknown-\(id)"
+                ]
+            },
+            kAudioAggregateDeviceTapListKey as String: [Any](),
+            kAudioAggregateDeviceIsPrivateKey as String: false
+        ]
+
+        let status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateID)
+
+        guard status == noErr else {
+            print("Failed to create aggregate device: \(status)")
+            return nil
+        }
+
+        return aggregateID
+    }
+
+    func teardownAggregateDevice() {
+        guard aggregateDeviceID != 0 else { return }
+        AudioHardwareDestroyAggregateDevice(aggregateDeviceID)
+        aggregateDeviceID = 0
+    }
+
+    private func getAggregateSubDevices(deviceID: AudioDeviceID) -> [AudioDeviceID] {
+        var propertyAddress = AudioObjectPropertyAddress(
+            // kAudioAggregateDevicePropertySubDeviceList = 'sdev' = 0x73646576
+            mSelector: 0x73646576,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var dataSize: UInt32 = 0
+        let status = AudioObjectGetPropertyDataSize(
+            deviceID,
+            &propertyAddress,
+            0, nil,
+            &dataSize
+        )
+
+        guard status == noErr, dataSize > 0 else { return [] }
+
+        let count = Int(dataSize) / MemoryLayout<AudioDeviceID>.size
+        var ids = [AudioDeviceID](repeating: 0, count: count)
+
+        AudioObjectGetPropertyData(
+            deviceID,
+            &propertyAddress,
+            0, nil,
+            &dataSize,
+            &ids
+        )
+
+        return ids
+    }
+
+    private func getDeviceUID(id: AudioDeviceID) -> String? {
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceUID,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var uid: CFString?
+        var dataSize = UInt32(MemoryLayout<CFString>.size)
+
+        let status = AudioObjectGetPropertyData(
+            id,
+            &propertyAddress,
+            0, nil,
+            &dataSize,
+            &uid
+        )
+
+        return status == noErr ? uid as String? : nil
     }
 
     // MARK: - Default Device Management

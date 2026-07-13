@@ -12,22 +12,18 @@ struct OutputDeviceRow: View {
     @State private var delayMs: Double = 0.0
 
     private var isSelected: Bool {
-        audioManager.selectedOutputDevice?.id == device.id
+        audioManager.selectedOutputDevices.contains(device.id)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Device Header
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isExpanded.toggle()
                 }
-                if !isSelected {
-                    audioManager.selectOutputDevice(device)
-                }
             }) {
                 HStack(spacing: 10) {
-                    Image(systemName: deviceIcon)
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .foregroundColor(isSelected ? .accentColor : .secondary)
                         .frame(width: 24)
@@ -45,11 +41,6 @@ struct OutputDeviceRow: View {
 
                     Spacer()
 
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.accentColor)
-                    }
-
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.caption2)
                         .foregroundColor(.secondary)
@@ -58,23 +49,28 @@ struct OutputDeviceRow: View {
                 .padding(.vertical, 10)
             }
             .buttonStyle(.plain)
+            .contextMenu {
+                Button(action: { audioManager.toggleOutputDevice(device) }) {
+                    Label(isSelected ? "Remove from output" : "Add to output",
+                          systemImage: isSelected ? "minus.circle" : "plus.circle")
+                }
+            }
 
-            // Expanded Controls
             if isExpanded {
                 channelControls
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .background(isSelected ? Color.accentColor.opacity(0.05) : Color.clear)
+        .onAppear {
+            loadConfiguration()
+        }
     }
-
-    // MARK: - Channel Controls
 
     private var channelControls: some View {
         VStack(spacing: 12) {
             Divider()
 
-            // Left Channel
             ChannelSlider(
                 label: "Left Channel",
                 icon: "speaker.wave.1",
@@ -97,7 +93,6 @@ struct OutputDeviceRow: View {
                 }
             )
 
-            // Right Channel
             ChannelSlider(
                 label: "Right Channel",
                 icon: "speaker.wave.3",
@@ -120,17 +115,11 @@ struct OutputDeviceRow: View {
                 }
             )
 
-            // Pan Control
             panControl
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .onAppear {
-            loadConfiguration()
-        }
     }
-
-    // MARK: - Pan Control
 
     private var panControl: some View {
         VStack(spacing: 4) {
@@ -168,8 +157,6 @@ struct OutputDeviceRow: View {
             }
         }
     }
-
-    // MARK: - Helpers
 
     private var deviceIcon: String {
         if device.name.lowercased().contains("headphone") || device.name.lowercased().contains("airpods") {

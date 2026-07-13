@@ -44,8 +44,8 @@ final class AudioDeviceManagerTests: XCTestCase {
     func testSelectedOutputDeviceExists() {
         audioManager.refreshDeviceList()
 
-        if let selected = audioManager.selectedOutputDevice {
-            XCTAssertTrue(audioManager.outputDevices.contains(selected),
+        if let selectedID = audioManager.selectedOutputDevices.first {
+            XCTAssertTrue(audioManager.outputDevices.contains { $0.id == selectedID },
                          "Selected output device should be in the list of output devices")
         }
     }
@@ -69,8 +69,8 @@ final class AudioDeviceManagerTests: XCTestCase {
             return
         }
 
-        audioManager.selectOutputDevice(firstDevice)
-        XCTAssertEqual(audioManager.selectedOutputDevice?.id, firstDevice.id)
+        audioManager.toggleOutputDevice(firstDevice)
+        XCTAssertTrue(audioManager.selectedOutputDevices.contains(firstDevice.id))
     }
 
     func testSelectInputDevice() {
