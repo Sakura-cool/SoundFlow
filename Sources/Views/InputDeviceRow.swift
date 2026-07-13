@@ -1,0 +1,194 @@
+import SwiftUI
+
+struct InputDeviceRow: View {
+    let device: AudioDevice
+
+    @EnvironmentObject var audioManager: AudioDeviceManager
+    @EnvironmentObject var appState: AppState
+
+    @State private var isExpanded = false
+    @State private var leftVolume: Float = 1.0
+    @State private var rightVolume: Float = 1.0
+    @State private var delayMs: Double = 0.0
+
+    private var isSelected: Bool {
+        audioManager.selectedInputDevice?.id == device.id
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Device Header
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+                if !isSelected {
+                    audioManager.selectInputDevice(device)
+                }
+            }) {
+                HStack(spacing: 10) {
+                    Image(systemName: deviceIcon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                        .frame(width: 24)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(device.name)
+                            .font(.system(.body, weight: isSelected ? .semibold : .regular))
+                            .foregroundColor(isSelected ? .primary : .secondary)
+                            .lineLimit(1)
+
+                        Text("\(device.inputChannelCount) channels • \(device.manufacturer)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.accentColor)
+                    }
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(.plain)
+
+            // Expanded Controls
+            if isExpanded {
+                channelControls
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(isSelected ? Color.accentColor.opacity(0.05) : Color.clear)
+    }
+
+    // MARK: - Channel Controls
+
+    private var channelControls: some View {
+        VStack(spacing: 12) {
+            Divider()
+
+            // Left Channel
+            ChannelSlider(
+                label: "Left Channel",
+                icon: "mic",
+                value: $leftVolume,
+                delay: $delayMs,
+                onVolumeChange: { volume in
+                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
+                        leftVolume: volume,
+                        rightVolume: rightVolume,
+                        delayMs: delayMs
+                    ))
+                    audioManager.setVolume(volume, deviceID: device.id, channel: 0, isOutput: false)
+                },
+                onDelayChange: { delay in
+                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
+                        leftVolume: leftVolume,
+                        rightVolume: rightVolume,
+                        delayMs: delay
+                    ))
+                }
+            )
+
+            // Right Channel
+            ChannelSlider(
+                label: "Right Channel",
+                icon: "mic.fill",
+                value: $rightVolume,
+                delay: $delayMs,
+                onVolumeChange: { volume in
+                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
+                        leftVolume: leftVolume,
+                        rightVolume: volume,
+                        delayMs: delayMs
+                    ))
+                    audioManager.setVolume(volume, deviceID: device.id, channel: 1, isOutput: false)
+                },
+                onDelayChange: { delay in
+                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
+                        leftVolume: leftVolume,
+                        rightVolume: rightVolume,
+                        delayMs: delay
+                    ))
+                }
+            )
+
+            // Pan Control
+            panControl
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
+        .onAppear {
+            loadConfiguration()
+        }
+    }
+
+    // MARK: - Pan Control
+
+    private var panControl: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Text("Balance")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+
+            HStack {
+                Text("L")
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+
+                Slider(
+                    value: Binding(
+                        get: { (leftVolume - rightVolume) / 2 + 0.5 },
+                        set: { newValue in
+                            let pan = (newValue - 0.5) * 2
+                            let clampedPan = max(-1.0, min(1.0, pan))
+                            let left = clampedPan <= 0 ? 1.0 : 1.0 - clampedPan
+                            let right = clampedPan >= 0 ? 1.0 : 1.0 + clampedPan
+                            leftVolume = left
+                            rightVolume = right
+                            audioManager.setPan(clampedPan, deviceID: device.id, isOutput: false)
+                        }
+                    ),
+                    in: 0...1
+                )
+
+                Text("R")
+                    .font(.caption2)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var deviceIcon: String {
+        if device.name.lowercased().contains("headphone") || device.name.lowercased().contains("airpods") {
+            return "headphones"
+        } else if device.name.lowercased().contains("usb") {
+            return "cable.connector"
+        } else if device.name.lowercased().contains("built-in") || device.isBuiltIn {
+            return "mic.badge.plus"
+        } else {
+            return "mic.fill"
+        }
+    }
+
+    private func loadConfiguration() {
+        let config = appState.getConfiguration(for: device.id)
+        if let inputConfig = config.inputConfig {
+            leftVolume = inputConfig.leftVolume
+            rightVolume = inputConfig.rightVolume
+            delayMs = inputConfig.delayMs
+        }
+    }
+}
