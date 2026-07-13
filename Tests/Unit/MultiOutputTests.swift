@@ -32,15 +32,15 @@ final class MultiOutputTests: XCTestCase {
     }
 
     func testToggleOutputDeviceRemovesFromSelection() {
-        guard let firstDevice = audioManager.outputDevices.first else {
-            XCTFail("No output devices available")
-            return
-        }
+        guard audioManager.outputDevices.count >= 2 else { return }
+        let device1 = audioManager.outputDevices[0]
+        let device2 = audioManager.outputDevices[1]
 
-        audioManager.selectedOutputDevices.insert(firstDevice.id)
-        audioManager.toggleOutputDevice(firstDevice)
+        audioManager.selectedOutputDevices = [device1.id, device2.id]
+        audioManager.toggleOutputDevice(device1)
 
-        XCTAssertFalse(audioManager.selectedOutputDevices.contains(firstDevice.id))
+        XCTAssertFalse(audioManager.selectedOutputDevices.contains(device1.id))
+        XCTAssertTrue(audioManager.selectedOutputDevices.contains(device2.id))
     }
 
     func testMultipleDevicesCanBeSelected() {

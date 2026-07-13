@@ -211,32 +211,62 @@ class AudioDeviceManager: ObservableObject {
 
     func toggleOutputDevice(_ device: AudioDevice) {
         if selectedOutputDevices.contains(device.id) {
+            guard selectedOutputDevices.count > 1 else { return }
             selectedOutputDevices.remove(device.id)
         } else {
             selectedOutputDevices.insert(device.id)
         }
         updateAggregateDevice()
-        AppState.shared.saveConfigurations()
+        AppState.shared.saveSelectedOutputDevices(selectedOutputDevices)
     }
 
     func selectInputDevice(_ device: AudioDevice) {
         selectedInputDevice = device
         setDefaultInputDevice(device.id)
-        AppState.shared.saveConfigurations()
+        AppState.shared.saveSelectedInputDevice(device.id)
     }
 
     private func updateSelectedDevices() {
-        let defaultOutput = getDefaultOutputDevice()
-        let defaultInput = getDefaultInputDevice()
+        restoreSavedOutputSelection()
+        restoreSavedInputSelection()
+        enforceMinimumSelection()
+        syncSystemDefaults()
+        restoreAggregateDeviceIfNeeded()
+    }
 
-        if aggregateDeviceID != 0 && defaultOutput == aggregateDeviceID {
-            // aggregate device is already selected, don't overwrite selection
-        } else if aggregateDeviceID != 0 && defaultOutput != aggregateDeviceID {
-            // aggregate device was torn down externally
-            aggregateDeviceID = 0
+    private func restoreSavedOutputSelection() {
+        let savedOutputIDs = AppState.shared.loadSelectedOutputDeviceIDs()
+        guard !savedOutputIDs.isEmpty else { return }
+        let validIDs = savedOutputIDs.filter { id in outputDevices.contains { $0.id == id } }
+        selectedOutputDevices = Set(validIDs)
+    }
+
+    private func restoreSavedInputSelection() {
+        guard let savedInputID = AppState.shared.selectedInputDeviceID else { return }
+        selectedInputDevice = inputDevices.first { $0.id == savedInputID }
+    }
+
+    private func enforceMinimumSelection() {
+        if selectedOutputDevices.isEmpty && !outputDevices.isEmpty {
+            selectedOutputDevices = [outputDevices[0].id]
         }
+        if selectedInputDevice == nil && !inputDevices.isEmpty {
+            selectedInputDevice = inputDevices[0]
+        }
+    }
 
-        selectedInputDevice = inputDevices.first { $0.id == defaultInput }
+    private func syncSystemDefaults() {
+        if let singleID = selectedOutputDevices.first, selectedOutputDevices.count == 1 {
+            setDefaultOutputDevice(singleID)
+        }
+        if let input = selectedInputDevice {
+            setDefaultInputDevice(input.id)
+        }
+    }
+
+    private func restoreAggregateDeviceIfNeeded() {
+        guard selectedOutputDevices.count > 1 else { return }
+        updateAggregateDevice()
     }
 
     // MARK: - Aggregate Device

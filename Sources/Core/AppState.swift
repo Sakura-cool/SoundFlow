@@ -6,15 +6,23 @@ class AppState: ObservableObject {
     @Published var configurations: [AudioDeviceID: DeviceConfiguration] = [:]
     @Published var isExpanded: Bool = false
     @Published var selectedOutputDeviceIDs: Set<AudioDeviceID> = []
+    @Published var selectedInputDeviceID: AudioDeviceID?
 
     static let shared = AppState()
 
     private let userDefaultsKey = "SoundFlow_DeviceConfigurations"
     private let selectedOutputKey = "SoundFlow_SelectedOutputDevices"
+    private let selectedInputKey = "SoundFlow_SelectedInputDevice"
+    private let hasLaunchedKey = "SoundFlow_HasLaunched"
+
+    var hasLaunched: Bool {
+        UserDefaults.standard.bool(forKey: hasLaunchedKey)
+    }
 
     private init() {
         loadConfigurations()
         loadSelectedOutputDevices()
+        loadSelectedInputDevice()
     }
 
     // MARK: - Configuration Management
@@ -61,6 +69,19 @@ class AppState: ObservableObject {
         selectedOutputDeviceIDs
     }
 
+    func saveSelectedInputDevice(_ deviceID: AudioDeviceID?) {
+        selectedInputDeviceID = deviceID
+        if let id = deviceID {
+            UserDefaults.standard.set(id, forKey: selectedInputKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: selectedInputKey)
+        }
+    }
+
+    func markHasLaunched() {
+        UserDefaults.standard.set(true, forKey: hasLaunchedKey)
+    }
+
     // MARK: - Persistence
 
     func saveConfigurations() {
@@ -86,5 +107,12 @@ class AppState: ObservableObject {
     private func loadSelectedOutputDevices() {
         guard let array = UserDefaults.standard.array(forKey: selectedOutputKey) as? [AudioDeviceID] else { return }
         selectedOutputDeviceIDs = Set(array)
+    }
+
+    private func loadSelectedInputDevice() {
+        let id = UserDefaults.standard.integer(forKey: selectedInputKey)
+        if id != 0 {
+            selectedInputDeviceID = AudioDeviceID(id)
+        }
     }
 }

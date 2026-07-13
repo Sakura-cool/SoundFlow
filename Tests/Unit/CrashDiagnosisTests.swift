@@ -151,13 +151,27 @@ final class CrashDiagnosisTests: XCTestCase {
 
     func testToggleOutputDeviceDoesNotCrash() {
         audioManager.refreshDeviceList()
-        guard let device = audioManager.outputDevices.first else { return }
+        guard audioManager.outputDevices.count >= 2 else { return }
+        let device1 = audioManager.outputDevices[0]
+        let device2 = audioManager.outputDevices[1]
 
         audioManager.selectedOutputDevices.removeAll()
-        audioManager.toggleOutputDevice(device)
+        audioManager.toggleOutputDevice(device1)
+        audioManager.toggleOutputDevice(device2)
+
+        audioManager.toggleOutputDevice(device1)
+        XCTAssertFalse(audioManager.selectedOutputDevices.contains(device1.id))
+        XCTAssertTrue(audioManager.selectedOutputDevices.contains(device2.id))
+    }
+
+    func testToggleOutputDevicePreventsRemovingLastDevice() {
+        audioManager.refreshDeviceList()
+        guard let device = audioManager.outputDevices.first else { return }
+
+        audioManager.selectedOutputDevices = [device.id]
         audioManager.toggleOutputDevice(device)
 
-        XCTAssertFalse(audioManager.selectedOutputDevices.contains(device.id))
+        XCTAssertTrue(audioManager.selectedOutputDevices.contains(device.id))
     }
 
     func testSelectInputDeviceDoesNotCrash() {
