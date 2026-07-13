@@ -154,9 +154,9 @@ class AudioDeviceManager: ObservableObject {
             &dataSize
         )
 
-        guard status == noErr else { return 0 }
+        guard status == noErr, dataSize > 0 else { return 0 }
 
-        let bufferListPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
+        let bufferListPointer = UnsafeMutableRawPointer.allocate(byteCount: Int(dataSize), alignment: MemoryLayout<AudioBufferList>.alignment)
         defer { bufferListPointer.deallocate() }
 
         status = AudioObjectGetPropertyData(
@@ -169,11 +169,10 @@ class AudioDeviceManager: ObservableObject {
 
         guard status == noErr else { return 0 }
 
-        let bufferList = bufferListPointer.pointee
-        var channelCount = 0
+        let buffers = UnsafeMutableAudioBufferListPointer(bufferListPointer.bindMemory(to: AudioBufferList.self, capacity: 1))
 
-        for _ in 0..<Int(bufferList.mNumberBuffers) {
-            let buffer = bufferList.mBuffers
+        var channelCount = 0
+        for buffer in buffers {
             channelCount += Int(buffer.mNumberChannels)
         }
 
