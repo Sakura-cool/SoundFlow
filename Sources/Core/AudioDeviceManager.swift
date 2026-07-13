@@ -7,14 +7,20 @@ class AudioDeviceManager: ObservableObject {
     @Published var inputDevices: [AudioDevice] = []
     @Published var selectedOutputDevices: Set<AudioDeviceID> = []
     @Published var selectedInputDevice: AudioDevice?
+    @Published var masterVolume: Float = 1.0
+    @Published var inputMasterVolume: Float = 1.0
 
     static let shared = AudioDeviceManager()
 
     private var deviceListenerBlock: AudioObjectPropertyListenerBlock?
     private let deviceListChangedNotification = Notification.Name("AudioDeviceListChanged")
     private var aggregateDeviceID: AudioDeviceID = 0
+    private let masterVolumeKey = "SoundFlow_MasterVolume"
+    private let inputMasterVolumeKey = "SoundFlow_InputMasterVolume"
 
     private init() {
+        masterVolume = UserDefaults.standard.object(forKey: masterVolumeKey) as? Float ?? 1.0
+        inputMasterVolume = UserDefaults.standard.object(forKey: inputMasterVolumeKey) as? Float ?? 1.0
         refreshDeviceList()
         startDeviceListener()
     }
@@ -547,6 +553,26 @@ class AudioDeviceManager: ObservableObject {
     }
 
     // MARK: - Device Listener
+
+    func setMasterVolume(_ volume: Float) {
+        let clamped = max(0.0, min(1.0, volume))
+        masterVolume = clamped
+        UserDefaults.standard.set(clamped, forKey: masterVolumeKey)
+        for id in selectedOutputDevices {
+            setVolume(clamped, deviceID: id, channel: 0, isOutput: true)
+            setVolume(clamped, deviceID: id, channel: 1, isOutput: true)
+        }
+    }
+
+    func setInputMasterVolume(_ volume: Float) {
+        let clamped = max(0.0, min(1.0, volume))
+        inputMasterVolume = clamped
+        UserDefaults.standard.set(clamped, forKey: inputMasterVolumeKey)
+        if let device = selectedInputDevice {
+            setVolume(clamped, deviceID: device.id, channel: 0, isOutput: false)
+            setVolume(clamped, deviceID: device.id, channel: 1, isOutput: false)
+        }
+    }
 
     private func startDeviceListener() {
         var propertyAddress = AudioObjectPropertyAddress(

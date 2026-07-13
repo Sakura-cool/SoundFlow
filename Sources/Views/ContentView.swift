@@ -77,6 +77,8 @@ struct ContentView: View {
     private var deviceListView: some View {
         ScrollView {
             LazyVStack(spacing: 2) {
+                masterVolumeControl
+
                 if selectedTab == .output {
                     ForEach(audioManager.outputDevices) { device in
                         OutputDeviceRow(device: device)
@@ -90,6 +92,41 @@ struct ContentView: View {
             .padding(.vertical, 8)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var masterVolumeControl: some View {
+        HStack(spacing: 8) {
+            Image(systemName: selectedTab == .output ? "speaker.wave.2.fill" : "mic.fill")
+                .font(.caption)
+                .foregroundColor(.accentColor)
+                .frame(width: 16)
+
+            Text(selectedTab == .output ? "Master" : "Input")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(width: 50, alignment: .leading)
+
+            Slider(
+                value: Binding(
+                    get: { selectedTab == .output ? audioManager.masterVolume : audioManager.inputMasterVolume },
+                    set: { newValue in
+                        if selectedTab == .output {
+                            audioManager.setMasterVolume(newValue)
+                        } else {
+                            audioManager.setInputMasterVolume(newValue)
+                        }
+                    }
+                ),
+                in: 0...1
+            )
+
+            Text("\(Int((selectedTab == .output ? audioManager.masterVolume : audioManager.inputMasterVolume) * 100))%")
+                .font(.caption2.monospacedDigit())
+                .foregroundColor(.secondary)
+                .frame(width: 36, alignment: .trailing)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Footer

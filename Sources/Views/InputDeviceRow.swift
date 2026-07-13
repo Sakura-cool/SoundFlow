@@ -74,20 +74,13 @@ struct InputDeviceRow: View {
         VStack(spacing: 12) {
             Divider()
 
-            // Left Channel
             ChannelSlider(
-                label: "Left Channel",
-                icon: "mic",
+                label: "Delay",
+                icon: "clock",
                 value: $leftVolume,
                 delay: $delayMs,
-                onVolumeChange: { volume in
-                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
-                        leftVolume: volume,
-                        rightVolume: rightVolume,
-                        delayMs: delayMs
-                    ))
-                    audioManager.setVolume(volume, deviceID: device.id, channel: 0, isOutput: false)
-                },
+                isVolumeSlider: false,
+                onVolumeChange: { _ in },
                 onDelayChange: { delay in
                     appState.setInputConfiguration(for: device.id, ChannelConfiguration(
                         leftVolume: leftVolume,
@@ -97,30 +90,6 @@ struct InputDeviceRow: View {
                 }
             )
 
-            // Right Channel
-            ChannelSlider(
-                label: "Right Channel",
-                icon: "mic.fill",
-                value: $rightVolume,
-                delay: $delayMs,
-                onVolumeChange: { volume in
-                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
-                        leftVolume: leftVolume,
-                        rightVolume: volume,
-                        delayMs: delayMs
-                    ))
-                    audioManager.setVolume(volume, deviceID: device.id, channel: 1, isOutput: false)
-                },
-                onDelayChange: { delay in
-                    appState.setInputConfiguration(for: device.id, ChannelConfiguration(
-                        leftVolume: leftVolume,
-                        rightVolume: rightVolume,
-                        delayMs: delay
-                    ))
-                }
-            )
-
-            // Pan Control
             panControl
         }
         .padding(.horizontal, 12)

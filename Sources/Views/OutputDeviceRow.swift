@@ -73,40 +73,12 @@ struct OutputDeviceRow: View {
             Divider()
 
             ChannelSlider(
-                label: "Left Channel",
-                icon: "speaker.wave.1",
+                label: "Delay",
+                icon: "clock",
                 value: $leftVolume,
                 delay: $delayMs,
-                onVolumeChange: { volume in
-                    appState.setOutputConfiguration(for: device.id, ChannelConfiguration(
-                        leftVolume: volume,
-                        rightVolume: rightVolume,
-                        delayMs: delayMs
-                    ))
-                    audioManager.setVolume(volume, deviceID: device.id, channel: 0, isOutput: true)
-                },
-                onDelayChange: { delay in
-                    appState.setOutputConfiguration(for: device.id, ChannelConfiguration(
-                        leftVolume: leftVolume,
-                        rightVolume: rightVolume,
-                        delayMs: delay
-                    ))
-                }
-            )
-
-            ChannelSlider(
-                label: "Right Channel",
-                icon: "speaker.wave.3",
-                value: $rightVolume,
-                delay: $delayMs,
-                onVolumeChange: { volume in
-                    appState.setOutputConfiguration(for: device.id, ChannelConfiguration(
-                        leftVolume: leftVolume,
-                        rightVolume: volume,
-                        delayMs: delayMs
-                    ))
-                    audioManager.setVolume(volume, deviceID: device.id, channel: 1, isOutput: true)
-                },
+                isVolumeSlider: false,
+                onVolumeChange: { _ in },
                 onDelayChange: { delay in
                     appState.setOutputConfiguration(for: device.id, ChannelConfiguration(
                         leftVolume: leftVolume,
