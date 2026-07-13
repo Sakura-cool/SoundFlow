@@ -31,22 +31,26 @@ struct OutputDeviceRow: View {
                         isExpanded.toggle()
                     }
                 }) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(device.name)
-                            .font(.system(.body, weight: isSelected ? .semibold : .regular))
-                            .foregroundColor(isSelected ? .primary : .secondary)
-                            .lineLimit(1)
+                    HStack(spacing: 0) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(device.name)
+                                .font(.system(.body, weight: isSelected ? .semibold : .regular))
+                                .foregroundColor(isSelected ? .primary : .secondary)
+                                .lineLimit(1)
 
-                        Text(device.manufacturer)
+                            Text(device.manufacturer)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption2)
                             .foregroundColor(.secondary)
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
                     }
-
-                    Spacer()
-
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
