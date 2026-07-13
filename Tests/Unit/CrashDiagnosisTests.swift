@@ -204,7 +204,7 @@ final class CrashDiagnosisTests: XCTestCase {
         let appState = AppState.shared
         let testID: AudioDeviceID = 999999
 
-        let config = ChannelConfiguration(leftVolume: 0.7, rightVolume: 0.3, delayMs: 10.0)
+        let config = ChannelConfiguration(leftVolume: 0.7, rightVolume: 0.3, deviceVolume: 0.8, delayMs: 10.0)
         appState.setOutputConfiguration(for: testID, config)
 
         let loaded = appState.getConfiguration(for: testID)

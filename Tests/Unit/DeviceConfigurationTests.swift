@@ -9,8 +9,8 @@ final class DeviceConfigurationTests: XCTestCase {
         let config = DeviceConfiguration(
             deviceId: 123,
             deviceName: "Test Speaker",
-            outputConfig: ChannelConfiguration(leftVolume: 0.8, rightVolume: 0.8, delayMs: 5.0),
-            inputConfig: ChannelConfiguration(leftVolume: 1.0, rightVolume: 1.0, delayMs: 0.0),
+            outputConfig: ChannelConfiguration(leftVolume: 0.8, rightVolume: 0.8, deviceVolume: 0.9, delayMs: 5.0),
+            inputConfig: ChannelConfiguration(leftVolume: 1.0, rightVolume: 1.0, deviceVolume: 1.0, delayMs: 0.0),
             isActive: true
         )
 

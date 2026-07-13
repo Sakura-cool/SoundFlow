@@ -7,6 +7,7 @@ struct OutputDeviceRow: View {
     @EnvironmentObject var appState: AppState
 
     @State private var isExpanded = false
+    @State private var deviceVolume: Float = 1.0
     @State private var leftVolume: Float = 1.0
     @State private var rightVolume: Float = 1.0
     @State private var delayMs: Double = 0.0
@@ -75,6 +76,19 @@ struct OutputDeviceRow: View {
         VStack(spacing: 12) {
             Divider()
 
+            VolumeSlider(
+                label: "Volume",
+                icon: "speaker.wave.2",
+                value: Binding(
+                    get: { deviceVolume },
+                    set: { newValue in
+                        deviceVolume = newValue
+                        audioManager.setDeviceVolume(newValue, deviceID: device.id, isOutput: true)
+                    }
+                ),
+                onVolumeChange: { _ in }
+            )
+
             ChannelSlider(
                 label: "Delay",
                 icon: "clock",
@@ -83,6 +97,7 @@ struct OutputDeviceRow: View {
                     appState.setOutputConfiguration(for: device.id, ChannelConfiguration(
                         leftVolume: leftVolume,
                         rightVolume: rightVolume,
+                        deviceVolume: deviceVolume,
                         delayMs: delay
                     ))
                 }
@@ -118,7 +133,13 @@ struct OutputDeviceRow: View {
                             let right = clampedPan >= 0 ? 1.0 : 1.0 + clampedPan
                             leftVolume = left
                             rightVolume = right
-                            audioManager.setPan(clampedPan, deviceID: device.id, isOutput: true)
+                            appState.setOutputConfiguration(for: device.id, ChannelConfiguration(
+                                leftVolume: left,
+                                rightVolume: right,
+                                deviceVolume: deviceVolume,
+                                delayMs: delayMs
+                            ))
+                            audioManager.applyVolumeToDevice(deviceID: device.id, isOutput: true)
                         }
                     ),
                     in: 0...1
@@ -144,6 +165,7 @@ struct OutputDeviceRow: View {
     private func loadConfiguration() {
         let config = appState.getConfiguration(for: device.id)
         if let outputConfig = config.outputConfig {
+            deviceVolume = outputConfig.deviceVolume
             leftVolume = outputConfig.leftVolume
             rightVolume = outputConfig.rightVolume
             delayMs = outputConfig.delayMs

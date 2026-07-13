@@ -32,7 +32,7 @@ final class AppStateTests: XCTestCase {
         let deviceId: AudioDeviceID = 42
 
         appState.updateConfiguration(for: deviceId) { config in
-            config.outputConfig = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, delayMs: 10.0)
+            config.outputConfig = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, deviceVolume: 0.8, delayMs: 10.0)
         }
 
         let updated = appState.getConfiguration(for: deviceId)
@@ -42,7 +42,7 @@ final class AppStateTests: XCTestCase {
 
     func testSetOutputConfiguration() {
         let deviceId: AudioDeviceID = 100
-        let config = ChannelConfiguration(leftVolume: 0.75, rightVolume: 0.75, delayMs: 5.0)
+        let config = ChannelConfiguration(leftVolume: 0.75, rightVolume: 0.75, deviceVolume: 0.9, delayMs: 5.0)
 
         appState.setOutputConfiguration(for: deviceId, config)
 
@@ -52,7 +52,7 @@ final class AppStateTests: XCTestCase {
 
     func testSetInputConfiguration() {
         let deviceId: AudioDeviceID = 200
-        let config = ChannelConfiguration(leftVolume: 0.9, rightVolume: 0.9, delayMs: 15.0)
+        let config = ChannelConfiguration(leftVolume: 0.9, rightVolume: 0.9, deviceVolume: 0.85, delayMs: 15.0)
 
         appState.setInputConfiguration(for: deviceId, config)
 

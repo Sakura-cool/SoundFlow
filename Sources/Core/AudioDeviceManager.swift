@@ -558,19 +558,49 @@ class AudioDeviceManager: ObservableObject {
         let clamped = max(0.0, min(1.0, volume))
         masterVolume = clamped
         UserDefaults.standard.set(clamped, forKey: masterVolumeKey)
-        for id in selectedOutputDevices {
-            setVolume(clamped, deviceID: id, channel: 0, isOutput: true)
-            setVolume(clamped, deviceID: id, channel: 1, isOutput: true)
-        }
+        applyVolumeToAllOutputDevices()
     }
 
     func setInputMasterVolume(_ volume: Float) {
         let clamped = max(0.0, min(1.0, volume))
         inputMasterVolume = clamped
         UserDefaults.standard.set(clamped, forKey: inputMasterVolumeKey)
+        applyVolumeToSelectedInputDevice()
+    }
+
+    func setDeviceVolume(_ volume: Float, deviceID: AudioDeviceID, isOutput: Bool) {
+        let clamped = max(0.0, min(1.0, volume))
+        let config = AppState.shared.getConfiguration(for: deviceID)
+        if isOutput {
+            var cfg = config.outputConfig ?? .default
+            cfg.deviceVolume = clamped
+            AppState.shared.setOutputConfiguration(for: deviceID, cfg)
+        } else {
+            var cfg = config.inputConfig ?? .default
+            cfg.deviceVolume = clamped
+            AppState.shared.setInputConfiguration(for: deviceID, cfg)
+        }
+        applyVolumeToDevice(deviceID: deviceID, isOutput: isOutput)
+    }
+
+    func applyVolumeToDevice(deviceID: AudioDeviceID, isOutput: Bool) {
+        let config = AppState.shared.getConfiguration(for: deviceID)
+        let cfg = isOutput ? (config.outputConfig ?? .default) : (config.inputConfig ?? .default)
+        let master = isOutput ? masterVolume : inputMasterVolume
+        let actual = master * cfg.deviceVolume
+        setVolume(actual * cfg.leftVolume, deviceID: deviceID, channel: 0, isOutput: isOutput)
+        setVolume(actual * cfg.rightVolume, deviceID: deviceID, channel: 1, isOutput: isOutput)
+    }
+
+    func applyVolumeToAllOutputDevices() {
+        for id in selectedOutputDevices {
+            applyVolumeToDevice(deviceID: id, isOutput: true)
+        }
+    }
+
+    func applyVolumeToSelectedInputDevice() {
         if let device = selectedInputDevice {
-            setVolume(clamped, deviceID: device.id, channel: 0, isOutput: false)
-            setVolume(clamped, deviceID: device.id, channel: 1, isOutput: false)
+            applyVolumeToDevice(deviceID: device.id, isOutput: false)
         }
     }
 

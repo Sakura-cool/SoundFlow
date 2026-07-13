@@ -10,6 +10,7 @@ final class ChannelConfigurationTests: XCTestCase {
 
         XCTAssertEqual(config.leftVolume, 1.0)
         XCTAssertEqual(config.rightVolume, 1.0)
+        XCTAssertEqual(config.deviceVolume, 1.0)
         XCTAssertEqual(config.delayMs, 0.0)
     }
 
@@ -19,6 +20,7 @@ final class ChannelConfigurationTests: XCTestCase {
         let config = ChannelConfiguration(
             leftVolume: 0.75,
             rightVolume: 0.5,
+            deviceVolume: 0.8,
             delayMs: 25.0
         )
 
@@ -27,21 +29,22 @@ final class ChannelConfigurationTests: XCTestCase {
 
         XCTAssertEqual(config.leftVolume, decoded.leftVolume)
         XCTAssertEqual(config.rightVolume, decoded.rightVolume)
+        XCTAssertEqual(config.deviceVolume, decoded.deviceVolume)
         XCTAssertEqual(config.delayMs, decoded.delayMs)
     }
 
     // MARK: - Equality
 
     func testChannelConfigurationEquality() {
-        let config1 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, delayMs: 10.0)
-        let config2 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, delayMs: 10.0)
+        let config1 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, deviceVolume: 0.7, delayMs: 10.0)
+        let config2 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, deviceVolume: 0.7, delayMs: 10.0)
 
         XCTAssertEqual(config1, config2)
     }
 
     func testChannelConfigurationInequality() {
-        let config1 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, delayMs: 10.0)
-        let config2 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, delayMs: 20.0)
+        let config1 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, deviceVolume: 0.7, delayMs: 10.0)
+        let config2 = ChannelConfiguration(leftVolume: 0.5, rightVolume: 0.5, deviceVolume: 0.7, delayMs: 20.0)
 
         XCTAssertNotEqual(config1, config2)
     }

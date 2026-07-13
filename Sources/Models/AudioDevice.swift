@@ -26,13 +26,15 @@ struct AudioDevice: Identifiable, Hashable {
 // MARK: - Channel Configuration
 
 struct ChannelConfiguration: Codable, Equatable {
-    var leftVolume: Float    // 0.0 - 1.0
-    var rightVolume: Float   // 0.0 - 1.0
+    var leftVolume: Float    // 0.0 - 1.0, balance ratio
+    var rightVolume: Float   // 0.0 - 1.0, balance ratio
+    var deviceVolume: Float  // 0.0 - 1.0, per-device volume
     var delayMs: Double      // Delay in milliseconds
 
     static let `default` = ChannelConfiguration(
         leftVolume: 1.0,
         rightVolume: 1.0,
+        deviceVolume: 1.0,
         delayMs: 0.0
     )
 }
