@@ -76,8 +76,9 @@ struct ContentView: View {
 
     private var deviceListView: some View {
         ScrollView {
-            LazyVStack(spacing: 2) {
+            LazyVStack(spacing: 0) {
                 masterVolumeControl
+                Divider()
 
                 if selectedTab == .output {
                     ForEach(audioManager.outputDevices) { device in

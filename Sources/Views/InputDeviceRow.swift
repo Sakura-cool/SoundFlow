@@ -77,10 +77,7 @@ struct InputDeviceRow: View {
             ChannelSlider(
                 label: "Delay",
                 icon: "clock",
-                value: $leftVolume,
                 delay: $delayMs,
-                isVolumeSlider: false,
-                onVolumeChange: { _ in },
                 onDelayChange: { delay in
                     appState.setInputConfiguration(for: device.id, ChannelConfiguration(
                         leftVolume: leftVolume,
