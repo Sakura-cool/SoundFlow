@@ -17,21 +17,13 @@ struct InputDeviceRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
+            HStack(spacing: 0) {
                 Button(action: { audioManager.selectInputDevice(device) }) {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundColor(isSelected ? .accentColor : .secondary)
-                        .frame(width: 24)
-                }
-                .buttonStyle(.plain)
+                    HStack(spacing: 8) {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.title3)
+                            .foregroundColor(isSelected ? .accentColor : .secondary)
 
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isExpanded.toggle()
-                    }
-                }) {
-                    HStack(spacing: 0) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(device.name)
                                 .font(.system(.body, weight: isSelected ? .semibold : .regular))
@@ -44,18 +36,29 @@ struct InputDeviceRow: View {
                         }
 
                         Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
 
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Spacer()
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                            .frame(width: 30, height: 30)
-                            .contentShape(Rectangle())
                     }
+                    .frame(width: 40)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
 
             if isExpanded {
                 channelControls
