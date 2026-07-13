@@ -45,11 +45,6 @@ struct InputDeviceRow: View {
 
                         Spacer()
 
-                        if isSelected {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.accentColor)
-                        }
-
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption2)
                             .foregroundColor(.secondary)
@@ -68,6 +63,9 @@ struct InputDeviceRow: View {
             }
         }
         .background(isSelected ? Color.accentColor.opacity(0.05) : Color.clear)
+        .onAppear {
+            loadConfiguration()
+        }
     }
 
     // MARK: - Channel Controls
@@ -127,9 +125,6 @@ struct InputDeviceRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .onAppear {
-            loadConfiguration()
-        }
     }
 
     // MARK: - Pan Control
