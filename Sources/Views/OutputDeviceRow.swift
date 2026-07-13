@@ -17,17 +17,20 @@ struct OutputDeviceRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-            }) {
-                HStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Button(action: { audioManager.toggleOutputDevice(device) }) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .foregroundColor(isSelected ? .accentColor : .secondary)
                         .frame(width: 24)
+                }
+                .buttonStyle(.plain)
 
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(device.name)
                             .font(.system(.body, weight: isSelected ? .semibold : .regular))
@@ -45,16 +48,10 @@ struct OutputDeviceRow: View {
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .contextMenu {
-                Button(action: { audioManager.toggleOutputDevice(device) }) {
-                    Label(isSelected ? "Remove from output" : "Add to output",
-                          systemImage: isSelected ? "minus.circle" : "plus.circle")
-                }
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
 
             if isExpanded {
                 channelControls

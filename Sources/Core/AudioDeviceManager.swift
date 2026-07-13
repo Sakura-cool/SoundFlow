@@ -77,7 +77,11 @@ class AudioDeviceManager: ObservableObject {
     }
 
     private func createAudioDevice(id: AudioDeviceID) -> AudioDevice? {
+        if id == aggregateDeviceID { return nil }
+
         let name = getDeviceName(id: id) ?? "Unknown Device"
+        if name == "SoundFlow Aggregate" { return nil }
+
         let manufacturer = getDeviceManufacturer(id: id) ?? "Unknown"
         let inputChannels = getChannelCount(id: id, isInput: true)
         let outputChannels = getChannelCount(id: id, isInput: false)

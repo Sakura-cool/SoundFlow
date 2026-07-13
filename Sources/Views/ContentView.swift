@@ -62,6 +62,7 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
+                    .contentShape(Rectangle())
                     .background(selectedTab == tab ? Color.accentColor.opacity(0.2) : Color.clear)
                     .foregroundColor(selectedTab == tab ? .accentColor : .secondary)
                 }

@@ -17,21 +17,20 @@ struct InputDeviceRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Device Header
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-                if !isSelected {
-                    audioManager.selectInputDevice(device)
-                }
-            }) {
-                HStack(spacing: 10) {
-                    Image(systemName: deviceIcon)
+            HStack(spacing: 10) {
+                Button(action: { audioManager.selectInputDevice(device) }) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .foregroundColor(isSelected ? .accentColor : .secondary)
                         .frame(width: 24)
+                }
+                .buttonStyle(.plain)
 
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(device.name)
                             .font(.system(.body, weight: isSelected ? .semibold : .regular))
@@ -54,12 +53,11 @@ struct InputDeviceRow: View {
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
 
-            // Expanded Controls
             if isExpanded {
                 channelControls
                     .transition(.opacity.combined(with: .move(edge: .top)))
