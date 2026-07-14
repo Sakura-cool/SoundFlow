@@ -5,6 +5,7 @@ import AppKit
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover = NSPopover()
+    private let updateManager = UpdateManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let bundleID = Bundle.main.bundleIdentifier ?? "com.soundflow.app"
@@ -28,13 +29,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let contentView = ContentView()
             .environmentObject(AudioDeviceManager.shared)
             .environmentObject(AppState.shared)
+            .environmentObject(updateManager)
 
         popover.contentViewController = NSHostingController(rootView: contentView)
         popover.behavior = .transient
         popover.animates = true
+
+        updateManager.startAutoCheck()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        updateManager.stopAutoCheck()
         AudioDeviceManager.shared.teardownAggregateDevice()
     }
 

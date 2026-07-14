@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var audioManager: AudioDeviceManager
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var updateManager: UpdateManager
 
     @State private var selectedTab: DeviceTab = .output
 
@@ -14,12 +15,15 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             headerView
+            if updateManager.updateAvailable {
+                updateBanner
+            }
             tabSelector
             deviceListView
             Divider()
             footerView
         }
-        .frame(width: 320, height: 400)
+        .frame(width: 320, height: updateManager.updateAvailable ? 430 : 400)
     }
 
     // MARK: - Header
@@ -39,7 +43,7 @@ struct ContentView: View {
 
             Spacer()
 
-            Button(action: { audioManager.refreshDeviceList() }) {
+            Button(action: { updateManager.checkForUpdate() }) {
                 Image(systemName: "arrow.clockwise")
                     .font(.caption)
             }
@@ -49,6 +53,34 @@ struct ContentView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private var updateBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundColor(.green)
+                .font(.caption)
+
+            Text("v\(updateManager.latestVersion) available")
+                .font(.caption)
+                .foregroundColor(.primary)
+
+            Spacer()
+
+            if updateManager.isDownloading {
+                ProgressView(value: updateManager.downloadProgress)
+                    .frame(width: 60)
+            } else {
+                Button("Update") {
+                    updateManager.downloadAndInstall()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.green.opacity(0.1))
     }
 
     // MARK: - Tab Selector
