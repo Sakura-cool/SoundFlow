@@ -20,7 +20,6 @@ class AudioDeviceManager: ObservableObject {
     private var isUpdatingAggregate = false
     private var deviceListenerWorkItem: DispatchWorkItem?
     private let aggregateDeviceUID = "com.soundflow.aggregate.shared"
-    private var aggregateLastCreated: Date?
 
     private init() {
         masterVolume = UserDefaults.standard.object(forKey: masterVolumeKey) as? Float ?? 1.0
@@ -36,10 +35,10 @@ class AudioDeviceManager: ObservableObject {
 
     // MARK: - Device Enumeration
 
-    func refreshDeviceList() {
+    func refreshDeviceList(skipAggregateRestore: Bool = false) {
         outputDevices = getDevices(isInput: false)
         inputDevices = getDevices(isInput: true)
-        updateSelectedDevices()
+        updateSelectedDevices(skipAggregateRestore: skipAggregateRestore)
     }
 
     private func getDevices(isInput: Bool) -> [AudioDevice] {
@@ -240,12 +239,14 @@ class AudioDeviceManager: ObservableObject {
         AppState.shared.saveSelectedInputDevice(device.id)
     }
 
-    private func updateSelectedDevices() {
+    private func updateSelectedDevices(skipAggregateRestore: Bool = false) {
         restoreSavedOutputSelection()
         restoreSavedInputSelection()
         enforceMinimumSelection()
         syncSystemDefaults()
-        restoreAggregateDeviceIfNeeded()
+        if !skipAggregateRestore {
+            restoreAggregateDeviceIfNeeded()
+        }
     }
 
     private func restoreSavedOutputSelection() {
@@ -298,40 +299,19 @@ class AudioDeviceManager: ObservableObject {
             return
         }
 
-        // If we have a valid aggregate device that still exists in the system, reuse it.
-        // Don't rely on fragile sub-device list comparison — just verify the device is alive.
-        if aggregateDeviceID != 0, deviceExists(aggregateDeviceID) {
+        if aggregateDeviceID != 0 {
             setDefaultOutputDevice(aggregateDeviceID)
             return
         }
 
-        // Cooldown: if we just created/destroyed an aggregate (within 3s), don't recreate.
-        // This prevents the listener → refreshDeviceList → recreate → listener loop.
-        if let last = aggregateLastCreated, Date().timeIntervalSince(last) < 3.0 {
-            return
-        }
+        let deviceIDs = Array(selectedOutputDevices).sorted()
 
-        teardownAggregateDevice()
-
-        guard let newID = createAggregateDevice(name: "SoundFlow Aggregate", subDeviceIDs: Array(selectedOutputDevices).sorted()) else {
+        guard let newID = createAggregateDevice(name: "SoundFlow Aggregate", subDeviceIDs: deviceIDs) else {
             return
         }
 
         aggregateDeviceID = newID
-        aggregateLastCreated = Date()
         setDefaultOutputDevice(newID)
-    }
-
-    private func deviceExists(_ deviceID: AudioDeviceID) -> Bool {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyDeviceNameCFString,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var name: CFString?
-        var dataSize = UInt32(MemoryLayout<CFString>.size)
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, &name)
-        return status == noErr
     }
 
     private func createAggregateDevice(name: String, subDeviceIDs: [AudioDeviceID]) -> AudioDeviceID? {
@@ -346,7 +326,7 @@ class AudioDeviceManager: ObservableObject {
                 ]
             },
             kAudioAggregateDeviceTapListKey as String: [Any](),
-            kAudioAggregateDeviceIsPrivateKey as String: false
+            kAudioAggregateDeviceIsPrivateKey as String: true
         ]
 
         let status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateID)
@@ -639,7 +619,7 @@ class AudioDeviceManager: ObservableObject {
             self.deviceListenerWorkItem?.cancel()
             let workItem = DispatchWorkItem { [weak self] in
                 guard let self else { return }
-                self.refreshDeviceList()
+                self.refreshDeviceList(skipAggregateRestore: true)
                 NotificationCenter.default.post(name: self.deviceListChangedNotification, object: nil)
             }
             self.deviceListenerWorkItem = workItem
