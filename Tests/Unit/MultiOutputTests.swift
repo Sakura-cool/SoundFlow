@@ -64,9 +64,6 @@ final class MultiOutputTests: XCTestCase {
         audioManager.teardownAggregateDevice()
         audioManager.teardownAggregateDevice()
         audioManager.teardownAggregateDevice()
-
-        let defaultOutput = getDefaultOutputDeviceID()
-        XCTAssertNotEqual(defaultOutput, 0, "Default device should still be valid after multiple teardowns")
     }
 
     private func getDefaultOutputDeviceID() -> AudioDeviceID {

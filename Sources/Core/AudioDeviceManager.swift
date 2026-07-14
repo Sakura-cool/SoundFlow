@@ -19,10 +19,12 @@ class AudioDeviceManager: ObservableObject {
     private let inputMasterVolumeKey = "SoundFlow_InputMasterVolume"
     private var isUpdatingAggregate = false
     private var deviceListenerWorkItem: DispatchWorkItem?
+    private let aggregateDeviceUID = "com.soundflow.aggregate.shared"
 
     private init() {
         masterVolume = UserDefaults.standard.object(forKey: masterVolumeKey) as? Float ?? 1.0
         inputMasterVolume = UserDefaults.standard.object(forKey: inputMasterVolumeKey) as? Float ?? 1.0
+        cleanupOrphanedAggregateDevices()
         refreshDeviceList()
         startDeviceListener()
     }
@@ -89,6 +91,9 @@ class AudioDeviceManager: ObservableObject {
 
         let name = getDeviceName(id: id) ?? "Unknown Device"
         if name == "SoundFlow Aggregate" { return nil }
+
+        let uid = getDeviceUID(id: id) ?? ""
+        if uid.hasPrefix("com.soundflow.aggregate.") { return nil }
 
         let manufacturer = getDeviceManufacturer(id: id) ?? "Unknown"
         let inputChannels = getChannelCount(id: id, isInput: true)
@@ -313,7 +318,7 @@ class AudioDeviceManager: ObservableObject {
 
         let desc: [String: Any] = [
             kAudioAggregateDeviceNameKey as String: name,
-            kAudioAggregateDeviceUIDKey as String: "com.soundflow.aggregate.\(UUID().uuidString)",
+            kAudioAggregateDeviceUIDKey as String: aggregateDeviceUID,
             kAudioAggregateDeviceSubDeviceListKey as String: subDeviceIDs.map { id -> [String: Any] in
                 [
                     kAudioSubDeviceUIDKey as String: getDeviceUID(id: id) ?? "unknown-\(id)"
@@ -337,6 +342,29 @@ class AudioDeviceManager: ObservableObject {
         guard aggregateDeviceID != 0 else { return }
         AudioHardwareDestroyAggregateDevice(aggregateDeviceID)
         aggregateDeviceID = 0
+    }
+
+    private func cleanupOrphanedAggregateDevices() {
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var dataSize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &dataSize) == noErr else { return }
+
+        let count = Int(dataSize) / MemoryLayout<AudioDeviceID>.size
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: count)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &dataSize, &deviceIDs) == noErr else { return }
+
+        for id in deviceIDs {
+            let name = getDeviceName(id: id) ?? ""
+            let uid = getDeviceUID(id: id) ?? ""
+            if name == "SoundFlow Aggregate" || uid.hasPrefix("com.soundflow.aggregate.") {
+                AudioHardwareDestroyAggregateDevice(id)
+            }
+        }
     }
 
     private func getAggregateSubDevices(deviceID: AudioDeviceID) -> [AudioDeviceID] {
