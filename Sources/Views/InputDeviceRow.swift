@@ -48,13 +48,14 @@ struct InputDeviceRow: View {
                         isExpanded.toggle()
                     }
                 }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 2) {
                         Spacer()
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundColor(.secondary)
+                            .frame(width: 20, height: 20)
                     }
-                    .frame(width: 40)
+                    .frame(width: 44)
                     .padding(.vertical, 10)
                     .contentShape(Rectangle())
                 }
