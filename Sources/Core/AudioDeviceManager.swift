@@ -17,6 +17,8 @@ class AudioDeviceManager: ObservableObject {
     private var aggregateDeviceID: AudioDeviceID = 0
     private let masterVolumeKey = "SoundFlow_MasterVolume"
     private let inputMasterVolumeKey = "SoundFlow_InputMasterVolume"
+    private var isUpdatingAggregate = false
+    private var deviceListenerWorkItem: DispatchWorkItem?
 
     private init() {
         masterVolume = UserDefaults.standard.object(forKey: masterVolumeKey) as? Float ?? 1.0
@@ -278,6 +280,10 @@ class AudioDeviceManager: ObservableObject {
     // MARK: - Aggregate Device
 
     func updateAggregateDevice() {
+        guard !isUpdatingAggregate else { return }
+        isUpdatingAggregate = true
+        defer { isUpdatingAggregate = false }
+
         if selectedOutputDevices.count <= 1 {
             teardownAggregateDevice()
             if let singleID = selectedOutputDevices.first {
@@ -611,11 +617,16 @@ class AudioDeviceManager: ObservableObject {
             mElement: kAudioObjectPropertyElementMain
         )
 
-        deviceListenerBlock = { _, _ in
-            DispatchQueue.main.async {
+        deviceListenerBlock = { [weak self] _, _ in
+            guard let self else { return }
+            self.deviceListenerWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self else { return }
                 self.refreshDeviceList()
                 NotificationCenter.default.post(name: self.deviceListChangedNotification, object: nil)
             }
+            self.deviceListenerWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: workItem)
         }
 
         guard let block = deviceListenerBlock else { return }
