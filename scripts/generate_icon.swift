@@ -3,17 +3,33 @@
 import AppKit
 import Foundation
 
-let sizes: [(String, Int)] = [
-    ("icon_16x16", 16),
-    ("icon_16x16@2x", 32),
-    ("icon_32x32", 32),
-    ("icon_32x32@2x", 64),
-    ("icon_128x128", 128),
-    ("icon_128x128@2x", 256),
-    ("icon_256x256", 256),
-    ("icon_256x256@2x", 512),
-    ("icon_512x512", 512),
-    ("icon_512x512@2x", 1024),
+struct IconEntry {
+    let filename: String
+    let pointSize: Int
+    let scale: Int
+    var pixelSize: Int { pointSize * scale }
+
+    var jsonEntry: [String: Any] {
+        [
+            "filename": filename,
+            "idiom": "universal",
+            "scale": "\(scale)x",
+            "size": "\(pointSize)x\(pointSize)",
+        ]
+    }
+}
+
+let entries: [IconEntry] = [
+    IconEntry(filename: "icon_16x16.png", pointSize: 16, scale: 1),
+    IconEntry(filename: "icon_16x16@2x.png", pointSize: 16, scale: 2),
+    IconEntry(filename: "icon_32x32.png", pointSize: 32, scale: 1),
+    IconEntry(filename: "icon_32x32@2x.png", pointSize: 32, scale: 2),
+    IconEntry(filename: "icon_128x128.png", pointSize: 128, scale: 1),
+    IconEntry(filename: "icon_128x128@2x.png", pointSize: 128, scale: 2),
+    IconEntry(filename: "icon_256x256.png", pointSize: 256, scale: 1),
+    IconEntry(filename: "icon_256x256@2x.png", pointSize: 256, scale: 2),
+    IconEntry(filename: "icon_512x512.png", pointSize: 512, scale: 1),
+    IconEntry(filename: "icon_512x512@2x.png", pointSize: 512, scale: 2),
 ]
 
 let outputDir = "Resources/AppIcon.appiconset"
@@ -21,7 +37,8 @@ try FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirec
 
 var images: [[String: Any]] = []
 
-for (name, px) in sizes {
+for entry in entries {
+    let px = entry.pixelSize
     let side = CGFloat(px)
     let config = NSImage.SymbolConfiguration(pointSize: side * 0.55, weight: .regular)
     guard let symbol = NSImage(systemSymbolName: "waveform", accessibilityDescription: nil)?
@@ -60,31 +77,17 @@ for (name, px) in sizes {
     NSGraphicsContext.restoreGraphicsState()
 
     let pngData = rep.representation(using: .png, properties: [:])!
-    let filePath = "\(outputDir)/\(name).png"
-    try pngData.write(to: URL(fileURLWithPath: filePath))
-
-    let filename = "\(name).png"
-    var entry: [String: Any] = [
-        "size": "\(Int(side))x\(Int(side))",
-        "idiom": "mac",
-        "filename": filename
-    ]
-    if px >= 32 && px % 2 == 0 {
-        let pointSize = Int(side / 2)
-        entry["scale"] = "\(px / pointSize)x"
-    } else {
-        entry["scale"] = "1x"
-    }
-    images.append(entry)
+    try pngData.write(to: URL(fileURLWithPath: "\(outputDir)/\(entry.filename)"))
+    images.append(entry.jsonEntry)
 }
 
 let contents: [String: Any] = [
     "images": images,
-    "info": ["version": 1, "author": "xcode"]
+    "info": ["version": 1, "author": "xcode"],
 ]
 
 let jsonData = try JSONSerialization.data(withJSONObject: contents, options: [.prettyPrinted, .sortedKeys])
-let jsonString = String(data: jsonData, encoding: .utf8)!.replacingOccurrences(of: "\\/", with: "/")
+let jsonString = String(data: jsonData, encoding: .utf8)!.replacingOccurrences(of: "\\/", with: "/") + "\n"
 try jsonString.write(toFile: "\(outputDir)/Contents.json", atomically: true, encoding: .utf8)
 
-print("Generated \(sizes.count) icon sizes in \(outputDir)")
+print("Generated \(entries.count) icon sizes in \(outputDir)")
