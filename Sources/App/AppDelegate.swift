@@ -18,7 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem.button {
             let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .medium)
-            let image = NSImage(systemSymbolName: "speaker.wave.2.fill", accessibilityDescription: "SoundFlow")?
+            let image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "SoundFlow")?
                 .withSymbolConfiguration(config)
             button.image = image
             button.target = self
