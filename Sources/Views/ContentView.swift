@@ -33,6 +33,10 @@ struct ContentView: View {
             Text("SoundFlow")
                 .font(.headline)
 
+            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
             Spacer()
 
             Button(action: { audioManager.refreshDeviceList() }) {
