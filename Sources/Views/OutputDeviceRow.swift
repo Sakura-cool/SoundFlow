@@ -125,7 +125,7 @@ struct OutputDeviceRow: View {
 
                 Slider(
                     value: Binding(
-                        get: { (leftVolume - rightVolume) / 2 + 0.5 },
+                        get: { (rightVolume - leftVolume) / 2 + 0.5 },
                         set: { newValue in
                             let pan = (newValue - 0.5) * 2
                             let clampedPan = max(-1.0, min(1.0, pan))
